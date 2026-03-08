@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { useState, useEffect } from 'react'
+import { supabase, checkError } from '../lib/supabase'
 import { useAuth } from '../context/useAuth'
 
 const STATUSES = ['open', 'in_progress', 'waiting', 'resolved', 'closed']
@@ -32,14 +32,16 @@ export default function TicketForm({ contacts, companies, ticket, onClose, onSav
         company_id: form.company_id || null,
         updated_at: new Date().toISOString(),
       }
+      let res
       if (ticket?.id) {
-        await supabase.from('tickets').update(payload).eq('id', ticket.id)
+        res = await supabase.from('tickets').update(payload).eq('id', ticket.id)
       } else {
-        await supabase.from('tickets').insert({
+        res = await supabase.from('tickets').insert({
           ...payload,
           owner_id: user?.id ?? null,
         })
       }
+      checkError(res)
       onSaved()
     } catch (err) {
       setError(err.message || 'Failed to save')
@@ -48,9 +50,23 @@ export default function TicketForm({ contacts, companies, ticket, onClose, onSav
     }
   }
 
+  useEffect(() => {
+    function onKeyDown(e) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-6">
           <h2 className="text-lg font-semibold text-slate-800 mb-4">
             {ticket?.id ? 'Edit ticket' : 'New ticket'}

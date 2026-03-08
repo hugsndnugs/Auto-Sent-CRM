@@ -9,6 +9,7 @@ export default function Companies() {
   const { user } = useAuth()
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
 
@@ -17,23 +18,59 @@ export default function Companies() {
   }, [user?.id])
 
   async function loadCompanies() {
+    setError('')
     const uid = user?.id
-    const { data } = await supabase
+    const { data, error: err } = await supabase
       .from('companies')
       .select('id, name, domain, industry, size, created_at')
       .or(`owner_id.eq.${uid},owner_id.is.null`)
       .order('name')
-    setCompanies(data ?? [])
+    if (err) {
+      setError(err.message || 'Failed to load companies')
+      setCompanies([])
+    } else {
+      setCompanies(data ?? [])
+    }
     setLoading(false)
   }
 
   async function handleDelete(id) {
     if (!confirm('Delete this company?')) return
-    await supabase.from('companies').delete().eq('id', id)
+    const { error: err } = await supabase.from('companies').delete().eq('id', id)
+    if (err) {
+      setError(err.message || 'Failed to delete company')
+      return
+    }
     loadCompanies()
   }
 
-  if (loading) return <div className="text-slate-500">Loading companies...</div>
+  if (loading) {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-semibold text-slate-800">Companies</h1>
+          <div className="h-10 w-28 bg-slate-200 rounded-md animate-pulse" />
+        </div>
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-slate-50 border-b border-slate-200 px-4 py-3 flex gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-4 w-24 bg-slate-200 rounded animate-pulse" />
+            ))}
+          </div>
+          <div className="divide-y divide-slate-100">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="px-4 py-3 flex items-center gap-4">
+                <div className="h-4 w-36 bg-slate-100 rounded animate-pulse" />
+                <div className="h-4 w-28 bg-slate-100 rounded animate-pulse" />
+                <div className="h-4 w-24 bg-slate-100 rounded animate-pulse" />
+                <div className="h-4 w-16 bg-slate-100 rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -47,6 +84,19 @@ export default function Companies() {
           Add company
         </button>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm flex items-center justify-between gap-2">
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => { setError(''); loadCompanies(); }}
+            className="shrink-0 px-3 py-1.5 bg-red-100 hover:bg-red-200 rounded text-sm font-medium"
+          >
+            Try again
+          </button>
+        </div>
+      )}
 
       {showForm && (
         <CompanyForm

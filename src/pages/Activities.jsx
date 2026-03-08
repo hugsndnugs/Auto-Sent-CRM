@@ -18,6 +18,7 @@ export default function Activities() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     loadActivities()
@@ -27,21 +28,25 @@ export default function Activities() {
   }, [user?.id, contactFilter, companyFilter])
 
   async function loadContacts() {
-    const { data } = await supabase.from('contacts').select('id, full_name').order('full_name')
+    const { data, error: err } = await supabase.from('contacts').select('id, full_name').order('full_name')
+    if (err) return
     setContacts(data ?? [])
   }
 
   async function loadCompanies() {
-    const { data } = await supabase.from('companies').select('id, name').order('name')
+    const { data, error: err } = await supabase.from('companies').select('id, name').order('name')
+    if (err) return
     setCompanies(data ?? [])
   }
 
   async function loadDeals() {
-    const { data } = await supabase.from('deals').select('id, title').order('title')
+    const { data, error: err } = await supabase.from('deals').select('id, title').order('title')
+    if (err) return
     setDeals(data ?? [])
   }
 
   async function loadActivities() {
+    setError('')
     const uid = user?.id
     let q = supabase
       .from('activities')
@@ -50,14 +55,23 @@ export default function Activities() {
       .order('occurred_at', { ascending: false })
     if (contactFilter) q = q.eq('contact_id', contactFilter)
     if (companyFilter) q = q.eq('company_id', companyFilter)
-    const { data } = await q.limit(100)
-    setActivities(data ?? [])
+    const { data, error: err } = await q.limit(100)
+    if (err) {
+      setError(err.message || 'Failed to load activities')
+      setActivities([])
+    } else {
+      setActivities(data ?? [])
+    }
     setLoading(false)
   }
 
   async function handleDelete(id) {
     if (!confirm('Delete this activity?')) return
-    await supabase.from('activities').delete().eq('id', id)
+    const { error: err } = await supabase.from('activities').delete().eq('id', id)
+    if (err) {
+      setError(err.message || 'Failed to delete activity')
+      return
+    }
     loadActivities()
   }
 
@@ -71,7 +85,32 @@ export default function Activities() {
     return deals.find((d) => d.id === id)?.title ?? '—'
   }
 
-  if (loading) return <div className="text-slate-500">Loading activities...</div>
+  if (loading) {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-semibold text-slate-800">Activities</h1>
+          <div className="h-10 w-28 bg-slate-200 rounded-md animate-pulse" />
+        </div>
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-slate-50 border-b border-slate-200 px-4 py-3 flex gap-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-4 w-20 bg-slate-200 rounded animate-pulse" />
+            ))}
+          </div>
+          <div className="divide-y divide-slate-100">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="px-4 py-3 flex items-center gap-4">
+                <div className="h-4 w-16 bg-slate-100 rounded animate-pulse" />
+                <div className="h-4 w-48 bg-slate-100 rounded animate-pulse" />
+                <div className="h-4 w-24 bg-slate-100 rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -85,6 +124,19 @@ export default function Activities() {
           Log activity
         </button>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm flex items-center justify-between gap-2">
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => { setError(''); loadActivities(); }}
+            className="shrink-0 px-3 py-1.5 bg-red-100 hover:bg-red-200 rounded text-sm font-medium"
+          >
+            Try again
+          </button>
+        </div>
+      )}
 
       {showForm && (
         <ActivityForm

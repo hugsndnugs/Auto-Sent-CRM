@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { useState, useEffect } from 'react'
+import { supabase, checkError } from '../lib/supabase'
 import { useAuth } from '../context/useAuth'
 import STAGES from '../lib/dealStages'
 
@@ -33,11 +33,13 @@ export default function DealForm({ contacts, companies, deal, onClose, onSaved }
         owner_id: user?.id ?? null,
         updated_at: new Date().toISOString(),
       }
+      let res
       if (deal?.id) {
-        await supabase.from('deals').update(payload).eq('id', deal.id)
+        res = await supabase.from('deals').update(payload).eq('id', deal.id)
       } else {
-        await supabase.from('deals').insert(payload)
+        res = await supabase.from('deals').insert(payload)
       }
+      checkError(res)
       onSaved()
     } catch (err) {
       setError(err.message || 'Failed to save')
@@ -46,9 +48,23 @@ export default function DealForm({ contacts, companies, deal, onClose, onSaved }
     }
   }
 
+  useEffect(() => {
+    function onKeyDown(e) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-6">
           <h2 className="text-lg font-semibold text-slate-800 mb-4">
             {deal?.id ? 'Edit deal' : 'New deal'}

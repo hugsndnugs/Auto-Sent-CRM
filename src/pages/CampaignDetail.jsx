@@ -15,6 +15,7 @@ export default function CampaignDetail() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [addContactId, setAddContactId] = useState('')
+  const [error, setError] = useState('')
 
   useEffect(() => {
     loadCampaign()
@@ -71,7 +72,11 @@ export default function CampaignDetail() {
 
   async function handleDelete() {
     if (!confirm('Delete this campaign?')) return
-    await supabase.from('campaigns').delete().eq('id', id)
+    const { error: err } = await supabase.from('campaigns').delete().eq('id', id)
+    if (err) {
+      setError(err.message || 'Failed to delete campaign')
+      return
+    }
     navigate('/campaigns')
   }
 
@@ -113,6 +118,19 @@ export default function CampaignDetail() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm flex items-center justify-between gap-2">
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => setError('')}
+            className="shrink-0 px-3 py-1.5 bg-red-100 hover:bg-red-200 rounded text-sm font-medium"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {showForm && (
         <CampaignForm

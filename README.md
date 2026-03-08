@@ -13,7 +13,9 @@ A full Customer Relationship Management (CRM) app with **sales** (contacts, comp
 ### 1. Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. In the SQL Editor, run the migration in `supabase/migrations/20250101000000_initial_schema.sql` to create tables and RLS.
+2. In the SQL Editor, run the migrations **in order** to create tables and RLS:
+   - `supabase/migrations/20250101000000_initial_schema.sql`
+   - `supabase/migrations/20250102000000_tickets_rls_owner.sql`
 3. In Project Settings → API, copy the **Project URL** and **anon public** key.
 
 ### 2. Local env

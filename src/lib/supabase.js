@@ -13,3 +13,16 @@ export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-anon-key'
 )
+
+/**
+ * Throws if the Supabase result has an error. Use after insert/update/delete/select
+ * so callers can rely on try/catch for API errors instead of checking result.error.
+ * @param {{ error?: { message?: string } | null; data?: unknown }} result
+ * @returns the same result (so you can use result.data if needed)
+ */
+export function checkError(result) {
+  if (result?.error) {
+    throw new Error(result.error.message || 'Request failed')
+  }
+  return result
+}

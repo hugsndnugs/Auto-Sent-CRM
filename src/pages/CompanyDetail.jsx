@@ -16,6 +16,7 @@ export default function CompanyDetail() {
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     loadCompany()
@@ -50,7 +51,11 @@ export default function CompanyDetail() {
 
   async function handleDelete() {
     if (!confirm('Delete this company?')) return
-    await supabase.from('companies').delete().eq('id', id)
+    const { error: err } = await supabase.from('companies').delete().eq('id', id)
+    if (err) {
+      setError(err.message || 'Failed to delete company')
+      return
+    }
     navigate('/companies')
   }
 
@@ -83,6 +88,19 @@ export default function CompanyDetail() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm flex items-center justify-between gap-2">
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => setError('')}
+            className="shrink-0 px-3 py-1.5 bg-red-100 hover:bg-red-200 rounded text-sm font-medium"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {showForm && (
         <CompanyForm

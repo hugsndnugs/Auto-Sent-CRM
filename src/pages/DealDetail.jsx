@@ -20,6 +20,7 @@ export default function DealDetail() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [showActivityForm, setShowActivityForm] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     loadDeal()
@@ -82,7 +83,11 @@ export default function DealDetail() {
 
   async function handleDelete() {
     if (!confirm('Delete this deal?')) return
-    await supabase.from('deals').delete().eq('id', id)
+    const { error: err } = await supabase.from('deals').delete().eq('id', id)
+    if (err) {
+      setError(err.message || 'Failed to delete deal')
+      return
+    }
     navigate('/deals')
   }
 
@@ -130,6 +135,19 @@ export default function DealDetail() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm flex items-center justify-between gap-2">
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => setError('')}
+            className="shrink-0 px-3 py-1.5 bg-red-100 hover:bg-red-200 rounded text-sm font-medium"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {showForm && (
         <DealForm

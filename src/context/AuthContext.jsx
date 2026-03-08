@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
-import { AuthContext } from './authContextRef'
+import { createContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+
+export const AuthContext = createContext(null)
 
 /** Map Supabase auth errors to user-friendly messages. */
 function authError(error) {

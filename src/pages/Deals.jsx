@@ -18,6 +18,7 @@ export default function Deals() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
   const [viewMode, setViewMode] = useState('pipeline') // 'pipeline' | 'table'
+  const [error, setError] = useState('')
 
   useEffect(() => {
     loadDeals()
@@ -26,16 +27,19 @@ export default function Deals() {
   }, [user?.id, contactFilter, companyFilter])
 
   async function loadContacts() {
-    const { data } = await supabase.from('contacts').select('id, full_name').order('full_name')
+    const { data, error: err } = await supabase.from('contacts').select('id, full_name').order('full_name')
+    if (err) return
     setContacts(data ?? [])
   }
 
   async function loadCompanies() {
-    const { data } = await supabase.from('companies').select('id, name').order('name')
+    const { data, error: err } = await supabase.from('companies').select('id, name').order('name')
+    if (err) return
     setCompanies(data ?? [])
   }
 
   async function loadDeals() {
+    setError('')
     const uid = user?.id
     let q = supabase
       .from('deals')
@@ -44,14 +48,23 @@ export default function Deals() {
       .order('expected_close_date', { ascending: false })
     if (contactFilter) q = q.eq('contact_id', contactFilter)
     if (companyFilter) q = q.eq('company_id', companyFilter)
-    const { data } = await q
-    setDeals(data ?? [])
+    const { data, error: err } = await q
+    if (err) {
+      setError(err.message || 'Failed to load deals')
+      setDeals([])
+    } else {
+      setDeals(data ?? [])
+    }
     setLoading(false)
   }
 
   async function handleDelete(id) {
     if (!confirm('Delete this deal?')) return
-    await supabase.from('deals').delete().eq('id', id)
+    const { error: err } = await supabase.from('deals').delete().eq('id', id)
+    if (err) {
+      setError(err.message || 'Failed to delete deal')
+      return
+    }
     loadDeals()
   }
 
@@ -66,7 +79,36 @@ export default function Deals() {
   const byStage = {}
   STAGES.forEach((s) => { byStage[s] = openDeals.filter((d) => d.stage === s) })
 
-  if (loading) return <div className="text-slate-500">Loading deals...</div>
+  if (loading) {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-semibold text-slate-800">Deals</h1>
+          <div className="flex gap-2">
+            <div className="h-9 w-20 bg-slate-200 rounded animate-pulse" />
+            <div className="h-10 w-28 bg-slate-200 rounded-md animate-pulse" />
+          </div>
+        </div>
+        <div className="overflow-x-auto pb-4">
+          <div className="flex gap-4 min-w-max">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="w-64 flex-shrink-0 bg-slate-100 rounded-lg border border-slate-200 overflow-hidden animate-pulse">
+                <div className="px-3 py-2 bg-slate-200 h-9" />
+                <div className="p-2 space-y-2">
+                  {[1, 2, 3].map((j) => (
+                    <div key={j} className="bg-white rounded border border-slate-200 p-3">
+                      <div className="h-4 w-full bg-slate-100 rounded mb-2" />
+                      <div className="h-3 w-16 bg-slate-100 rounded" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -98,6 +140,19 @@ export default function Deals() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm flex items-center justify-between gap-2">
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => { setError(''); loadDeals(); }}
+            className="shrink-0 px-3 py-1.5 bg-red-100 hover:bg-red-200 rounded text-sm font-medium"
+          >
+            Try again
+          </button>
+        </div>
+      )}
 
       {showForm && (
         <DealForm
