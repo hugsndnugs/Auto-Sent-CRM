@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/useAuth'
@@ -14,12 +14,7 @@ export default function Contacts() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
 
-  useEffect(() => {
-    loadContacts()
-    loadCompanies()
-  }, [user?.id])
-
-  async function loadCompanies() {
+  const loadCompanies = useCallback(async () => {
     const { data, error: err } = await supabase.from('companies').select('id, name').order('name')
     if (err) {
       setError(err.message || 'Failed to load companies')
@@ -27,9 +22,9 @@ export default function Contacts() {
       return
     }
     setCompanies(data ?? [])
-  }
+  }, [])
 
-  async function loadContacts() {
+  const loadContacts = useCallback(async () => {
     setError('')
     const uid = user?.id
     const { data, error: err } = await supabase
@@ -44,7 +39,12 @@ export default function Contacts() {
       setContacts(data ?? [])
     }
     setLoading(false)
-  }
+  }, [user?.id])
+
+  useEffect(() => {
+    loadContacts()
+    loadCompanies()
+  }, [loadCompanies, loadContacts])
 
   async function handleDelete(id) {
     if (!confirm('Delete this contact?')) return

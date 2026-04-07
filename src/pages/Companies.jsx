@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/useAuth'
@@ -13,11 +13,7 @@ export default function Companies() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
 
-  useEffect(() => {
-    loadCompanies()
-  }, [user?.id])
-
-  async function loadCompanies() {
+  const loadCompanies = useCallback(async () => {
     setError('')
     const uid = user?.id
     const { data, error: err } = await supabase
@@ -32,7 +28,11 @@ export default function Companies() {
       setCompanies(data ?? [])
     }
     setLoading(false)
-  }
+  }, [user?.id])
+
+  useEffect(() => {
+    loadCompanies()
+  }, [loadCompanies])
 
   async function handleDelete(id) {
     if (!confirm('Delete this company?')) return

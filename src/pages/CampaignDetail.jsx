@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/useAuth'
@@ -17,12 +17,7 @@ export default function CampaignDetail() {
   const [addContactId, setAddContactId] = useState('')
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    loadCampaign()
-    loadContacts()
-  }, [id, user?.id])
-
-  async function loadContacts() {
+  const loadContacts = useCallback(async () => {
     const uid = user?.id
     const { data } = await supabase
       .from('contacts')
@@ -30,9 +25,9 @@ export default function CampaignDetail() {
       .or(`owner_id.eq.${uid},owner_id.is.null`)
       .order('full_name')
     setContacts(data ?? [])
-  }
+  }, [user?.id])
 
-  async function loadCampaign() {
+  const loadCampaign = useCallback(async () => {
     const uid = user?.id
     const { data: c, error } = await supabase
       .from('campaigns')
@@ -53,7 +48,12 @@ export default function CampaignDetail() {
       .order('touched_at', { ascending: false })
     setTouchpoints(tp ?? [])
     setLoading(false)
-  }
+  }, [id, user?.id])
+
+  useEffect(() => {
+    loadCampaign()
+    loadContacts()
+  }, [loadCampaign, loadContacts])
 
   async function handleAddContact() {
     if (!addContactId) return

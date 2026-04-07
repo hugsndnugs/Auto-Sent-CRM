@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -20,32 +20,25 @@ export default function Activities() {
   const [editing, setEditing] = useState(null)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    loadActivities()
-    loadContacts()
-    loadCompanies()
-    loadDeals()
-  }, [user?.id, contactFilter, companyFilter])
-
-  async function loadContacts() {
+  const loadContacts = useCallback(async () => {
     const { data, error: err } = await supabase.from('contacts').select('id, full_name').order('full_name')
     if (err) return
     setContacts(data ?? [])
-  }
+  }, [])
 
-  async function loadCompanies() {
+  const loadCompanies = useCallback(async () => {
     const { data, error: err } = await supabase.from('companies').select('id, name').order('name')
     if (err) return
     setCompanies(data ?? [])
-  }
+  }, [])
 
-  async function loadDeals() {
+  const loadDeals = useCallback(async () => {
     const { data, error: err } = await supabase.from('deals').select('id, title').order('title')
     if (err) return
     setDeals(data ?? [])
-  }
+  }, [])
 
-  async function loadActivities() {
+  const loadActivities = useCallback(async () => {
     setError('')
     const uid = user?.id
     let q = supabase
@@ -63,7 +56,14 @@ export default function Activities() {
       setActivities(data ?? [])
     }
     setLoading(false)
-  }
+  }, [companyFilter, contactFilter, user?.id])
+
+  useEffect(() => {
+    loadActivities()
+    loadContacts()
+    loadCompanies()
+    loadDeals()
+  }, [loadActivities, loadCompanies, loadContacts, loadDeals])
 
   async function handleDelete(id) {
     if (!confirm('Delete this activity?')) return

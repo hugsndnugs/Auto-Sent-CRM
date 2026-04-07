@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/useAuth'
@@ -18,23 +18,17 @@ export default function TicketDetail() {
   const [showForm, setShowForm] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    loadTicket()
-    loadContacts()
-    loadCompanies()
-  }, [id])
-
-  async function loadContacts() {
+  const loadContacts = useCallback(async () => {
     const { data } = await supabase.from('contacts').select('id, full_name').order('full_name')
     setContacts(data ?? [])
-  }
+  }, [])
 
-  async function loadCompanies() {
+  const loadCompanies = useCallback(async () => {
     const { data } = await supabase.from('companies').select('id, name').order('name')
     setCompanies(data ?? [])
-  }
+  }, [])
 
-  async function loadTicket() {
+  const loadTicket = useCallback(async () => {
     const { data: t, error } = await supabase.from('tickets').select('*').eq('id', id).single()
     if (error || !t) {
       setTicket(null)
@@ -51,7 +45,13 @@ export default function TicketDetail() {
       setCompany(co)
     } else setCompany(null)
     setLoading(false)
-  }
+  }, [id])
+
+  useEffect(() => {
+    loadTicket()
+    loadContacts()
+    loadCompanies()
+  }, [loadCompanies, loadContacts, loadTicket])
 
   async function handleDelete() {
     if (!confirm('Delete this ticket?')) return

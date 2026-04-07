@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/useAuth'
@@ -18,11 +18,7 @@ export default function CompanyDetail() {
   const [showForm, setShowForm] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    loadCompany()
-  }, [id, user?.id])
-
-  async function loadCompany() {
+  const loadCompany = useCallback(async () => {
     const uid = user?.id
     const { data: c, error } = await supabase
       .from('companies')
@@ -47,7 +43,11 @@ export default function CompanyDetail() {
     setActivities(activitiesRes.data ?? [])
     setTickets(ticketsRes.data ?? [])
     setLoading(false)
-  }
+  }, [id, user?.id])
+
+  useEffect(() => {
+    loadCompany()
+  }, [loadCompany])
 
   async function handleDelete() {
     if (!confirm('Delete this company?')) return
