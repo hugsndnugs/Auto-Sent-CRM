@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/useAuth'
@@ -22,23 +22,17 @@ export default function DealDetail() {
   const [showActivityForm, setShowActivityForm] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    loadDeal()
-    loadContacts()
-    loadCompanies()
-  }, [id, user?.id])
-
-  async function loadContacts() {
+  const loadContacts = useCallback(async () => {
     const { data } = await supabase.from('contacts').select('id, full_name').order('full_name')
     setContacts(data ?? [])
-  }
+  }, [])
 
-  async function loadCompanies() {
+  const loadCompanies = useCallback(async () => {
     const { data } = await supabase.from('companies').select('id, name').order('name')
     setCompanies(data ?? [])
-  }
+  }, [])
 
-  async function loadDeal() {
+  const loadDeal = useCallback(async () => {
     const uid = user?.id
     const { data: d, error } = await supabase
       .from('deals')
@@ -67,7 +61,13 @@ export default function DealDetail() {
       .order('occurred_at', { ascending: false })
     setActivities(acts ?? [])
     setLoading(false)
-  }
+  }, [id, user?.id])
+
+  useEffect(() => {
+    loadDeal()
+    loadContacts()
+    loadCompanies()
+  }, [loadCompanies, loadContacts, loadDeal])
 
   async function setStage(newStage) {
     await supabase

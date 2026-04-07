@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/useAuth'
@@ -15,11 +15,7 @@ export default function Campaigns() {
   const [editing, setEditing] = useState(null)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    loadCampaigns()
-  }, [user?.id])
-
-  async function loadCampaigns() {
+  const loadCampaigns = useCallback(async () => {
     setError('')
     const uid = user?.id
     const { data, error: err } = await supabase
@@ -34,7 +30,11 @@ export default function Campaigns() {
       setCampaigns(data ?? [])
     }
     setLoading(false)
-  }
+  }, [user?.id])
+
+  useEffect(() => {
+    loadCampaigns()
+  }, [loadCampaigns])
 
   async function handleDelete(id) {
     if (!confirm('Delete this campaign?')) return

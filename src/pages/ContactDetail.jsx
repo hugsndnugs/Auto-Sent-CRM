@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/useAuth'
@@ -19,17 +19,12 @@ export default function ContactDetail() {
   const [showForm, setShowForm] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    loadContact()
-    loadCompanies()
-  }, [id, user?.id])
-
-  async function loadCompanies() {
+  const loadCompanies = useCallback(async () => {
     const { data } = await supabase.from('companies').select('id, name').order('name')
     setCompanies(data ?? [])
-  }
+  }, [])
 
-  async function loadContact() {
+  const loadContact = useCallback(async () => {
     const uid = user?.id
     const { data: c, error } = await supabase
       .from('contacts')
@@ -56,7 +51,12 @@ export default function ContactDetail() {
     setActivities(activitiesRes.data ?? [])
     setTickets(ticketsRes.data ?? [])
     setLoading(false)
-  }
+  }, [id, user?.id])
+
+  useEffect(() => {
+    loadContact()
+    loadCompanies()
+  }, [loadCompanies, loadContact])
 
   async function handleDelete() {
     if (!confirm('Delete this contact?')) return
